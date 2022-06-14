@@ -13,6 +13,11 @@ class ViewController: UIViewController, MKMapViewDelegate, CLLocationManagerDele
     @IBOutlet weak var map: MKMapView!
     var locationManager = CLLocationManager()
     
+    @IBOutlet weak var velocityLabel: UILabel!
+    @IBOutlet weak var latLabel: UILabel!
+    @IBOutlet weak var lngLabel: UILabel!
+    @IBOutlet weak var addressLabel: UILabel!
+    
     override func viewDidLoad() {
         super.viewDidLoad()
         
@@ -20,6 +25,43 @@ class ViewController: UIViewController, MKMapViewDelegate, CLLocationManagerDele
         locationManager.desiredAccuracy = kCLLocationAccuracyBest
         locationManager.requestWhenInUseAuthorization()
         locationManager.startUpdatingLocation()
+    }
+    
+    func locationManager(_ manager: CLLocationManager, didUpdateLocations locations: [CLLocation]) {
+        let userLocation = locations.last!
+        
+        let lat = userLocation.coordinate.latitude
+        let lng = userLocation.coordinate.longitude
+        latLabel.text = String(lat)
+        lngLabel.text = String(lng)
+        
+        velocityLabel.text = String(userLocation.speed)
+        
+        let deltaLat: CLLocationDegrees = 0.01
+        let deltaLng: CLLocationDegrees = 0.01
+        
+        let location: CLLocationCoordinate2D = CLLocationCoordinate2DMake(lat, lng)
+        
+        let exibitionArea: MKCoordinateSpan = MKCoordinateSpan(latitudeDelta: deltaLat, longitudeDelta: deltaLng)
+        let region: MKCoordinateRegion = MKCoordinateRegion(center: location, span: exibitionArea)
+        map.setRegion(region, animated: true)
+        
+        CLGeocoder().reverseGeocodeLocation(userLocation, completionHandler: { (placeDetail, err) in
+            if err == nil {
+                if let placeData = placeDetail?.first {
+                    self.addressLabel.text = ""
+                    if let subThoroughfare = placeData.subThoroughfare {
+                        self.addressLabel.text = subThoroughfare
+                    }
+                    if let thoroughfare = placeData.thoroughfare {
+                        self.addressLabel.text! += " \(thoroughfare)"
+                    }
+                    if let locality = placeData.locality {
+                        self.addressLabel.text! += ", \(locality)"
+                    }
+                }
+            }
+        })
     }
     
     func locationManager(_ manager: CLLocationManager, didChangeAuthorization status: CLAuthorizationStatus) {
